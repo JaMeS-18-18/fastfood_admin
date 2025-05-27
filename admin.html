@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — FastFood</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    body {
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-color: #f8f9fa;
+    }
+    .sidebar {
+      width: 220px;
+      background-color: #343a40;
+      color: white;
+      padding-top: 1rem;
+    }
+    .sidebar .nav-link {
+      color: #dee2e6;
+    }
+    .sidebar .nav-link.active {
+      background-color: #495057;
+      font-weight: bold;
+      border-left: 4px solid #0d6efd;
+    }
+    .content {
+      flex: 1;
+      padding: 2rem;
+      background-color: white;
+    }
+    .list-group-item {
+      background-color: #f1f3f5;
+      border: 1px solid #dee2e6;
+    }
+    .btn-success, .btn-warning, .btn-danger {
+      font-size: 0.875rem;
+    }
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        display: flex;
+        justify-content: space-around;
+      }
+      .content {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar d-flex flex-column flex-md-column">
+    <h5 class="text-center mb-3 d-none d-md-block">Филиалы</h5>
+    <nav class="nav flex-column flex-md-column flex-sm-row w-100">
+      <a href="#" class="nav-link" onclick="switchBranch('altay')">Altay</a>
+      <a href="#" class="nav-link" onclick="switchBranch('barnaul')">Barnaul</a>
+      <a href="#" class="nav-link" onclick="switchBranch('beshariq')">Beshariq</a>
+    </nav>
+  </div>
+
+  <div class="content">
+    <h2 class="mb-4">Admin Panel — <span id="branchTitle">Altay</span></h2>
+
+    <div class="mb-5">
+      <h4>Месяцы</h4>
+      <form id="monthForm" class="d-flex flex-wrap gap-2 mb-3">
+        <input type="text" id="monthInput" class="form-control" placeholder="Добавить месяц" required style="max-width: 300px;">
+        <button class="btn btn-success" type="submit">Добавить</button>
+      </form>
+      <ul id="monthList" class="list-group"></ul>
+    </div>
+
+    <div>
+      <h4>Сотрудники</h4>
+      <form id="employeeForm" class="d-flex flex-wrap gap-2 mb-3">
+        <input type="text" id="employeeInput" class="form-control" placeholder="Добавить сотрудника" required style="max-width: 300px;">
+        <button class="btn btn-success" type="submit">Добавить</button>
+      </form>
+      <ul id="employeeList" class="list-group"></ul>
+    </div>
+  </div>
+
+  <script>
+    const API_BASES = {
+      altay: "https://6835ae22cd78db2058c2ac09.mockapi.io/api/v1",
+      barnaul: "https://6835b82ccd78db2058c2d47f.mockapi.io/api/v1-barnaul",
+      beshariq: "https://682af6e6ab2b5004cb3873af.mockapi.io/api/v1"
+    };
+
+    let currentBranch = "altay";
+
+    const branchTitle = document.getElementById('branchTitle');
+    const monthListEl = document.getElementById('monthList');
+    const employeeListEl = document.getElementById('employeeList');
+
+    function switchBranch(branch) {
+      currentBranch = branch;
+      branchTitle.textContent = branch.charAt(0).toUpperCase() + branch.slice(1);
+
+      document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+      document.querySelector(`.nav-link[onclick*="${branch}"]`).classList.add('active');
+
+      fetchAndRender('months', monthListEl);
+      fetchAndRender('employees', employeeListEl);
+    }
+
+    function getApiUrl(resource) {
+      return `${API_BASES[currentBranch]}/${resource}`;
+    }
+
+    function fetchAndRender(endpoint, container) {
+      fetch(getApiUrl(endpoint))
+        .then(res => res.json())
+        .then(data => {
+          container.innerHTML = '';
+          data.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.innerHTML = `
+              <span>${item.name}</span>
+              <div>
+                <button class="btn btn-sm btn-warning me-2" onclick="editItem('${endpoint}', ${item.id}, '${item.name}')">Изменить</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteItem('${endpoint}', ${item.id})">Удалить</button>
+              </div>
+            `;
+            container.appendChild(li);
+          });
+        });
+    }
+
+    function addItem(endpoint, inputEl, container) {
+      const name = inputEl.value.trim();
+      if (!name) return;
+      fetch(getApiUrl(endpoint), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      })
+      .then(() => {
+        inputEl.value = '';
+        fetchAndRender(endpoint, container);
+      });
+    }
+
+    function deleteItem(endpoint, id) {
+      fetch(`${getApiUrl(endpoint)}/${id}`, {
+        method: 'DELETE'
+      }).then(() => {
+        fetchAndRender(endpoint, endpoint === 'months' ? monthListEl : employeeListEl);
+      });
+    }
+
+    function editItem(endpoint, id, oldName) {
+      const newName = prompt("Введите новое имя:", oldName);
+      if (!newName || newName.trim() === '') return;
+      fetch(`${getApiUrl(endpoint)}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName.trim() })
+      }).then(() => {
+        fetchAndRender(endpoint, endpoint === 'months' ? monthListEl : employeeListEl);
+      });
+    }
+
+    document.getElementById('monthForm').addEventListener('submit', e => {
+      e.preventDefault();
+      addItem('months', document.getElementById('monthInput'), monthListEl);
+    });
+
+    document.getElementById('employeeForm').addEventListener('submit', e => {
+      e.preventDefault();
+      addItem('employees', document.getElementById('employeeInput'), employeeListEl);
+    });
+
+    switchBranch(currentBranch);
+  </script>
+</body>
+</html>
