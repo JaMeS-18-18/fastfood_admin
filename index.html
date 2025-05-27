@@ -66,7 +66,7 @@
   </div>
 
   <div class="content">
-    <h2 class="mb-4">Admin Panel — <span id="branchTitle">Altay</span></h2>
+    <h2 class="mb-4">Admin Panel <span id="branchTitle"></span></h2>
 
     <div class="mb-5">
       <h4>Месяцы</h4>
@@ -96,13 +96,13 @@
 
     let currentBranch = "altay";
 
-    const branchTitle = document.getElementById('branchTitle');
+    // const branchTitle = document.getElementById('branchTitle');
     const monthListEl = document.getElementById('monthList');
     const employeeListEl = document.getElementById('employeeList');
 
     function switchBranch(branch) {
       currentBranch = branch;
-      branchTitle.textContent = branch.charAt(0).toUpperCase() + branch.slice(1);
+      // branchTitle.textContent = branch.charAt(0).toUpperCase() + branch.slice(1);
 
       document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
       document.querySelector(`.nav-link[onclick*="${branch}"]`).classList.add('active');
